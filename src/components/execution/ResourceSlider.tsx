@@ -3,7 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import type { Allocation, TeamId } from '@/types/game';
 import { TEAM_IDS, TEAM_CONFIG, FOCUS_THRESHOLD, NORMAL_THRESHOLD } from '@/types/game';
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+const ICON_MAP: Record<string, any> = {
   Radio,
   UtensilsCrossed,
   HeartPulse,

@@ -26,17 +26,20 @@ interface GameStore {
   hasSave: boolean;
   finalScore: { score: number; rating: string; strategyPoints: number } | null;
   gameOverReason: string;
+  showHistory: boolean;
+  historyRecords: Array<{ score: number; rating: string; date: number; victory: boolean }>;
 
   initNewGame: (useInheritedPoints: boolean) => void;
   continueGame: () => boolean;
   setFocusTarget: (teamId: TeamId) => void;
   setAllocation: (allocation: Allocation) => void;
   confirmAllocation: () => void;
-  nextRound: () => void;
+  nextRound: () => boolean;
   goToPhase: (phase: GamePhase) => void;
   endGame: () => void;
   returnToMenu: () => void;
   checkHasSave: () => void;
+  toggleHistory: () => void;
 }
 
 function createInitialGameState(inheritedPoints: number): GameState {
@@ -80,9 +83,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hasSave: hasSaveData(),
   finalScore: null,
   gameOverReason: '',
+  showHistory: false,
+  historyRecords: JSON.parse(localStorage.getItem('emergency_drill_history') || '[]'),
 
   checkHasSave: () => {
     set({ hasSave: hasSaveData() });
+  },
+
+  toggleHistory: () => {
+    set((s) => ({ showHistory: !s.showHistory }));
   },
 
   initNewGame: (useInheritedPoints: boolean) => {
@@ -148,7 +157,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   nextRound: () => {
     const gs = get().gameState;
-    if (!gs) return;
+    if (!gs) return false;
+
+    if (gs.isGameOver) {
+      return true;
+    }
 
     const endCheck = checkGameEnd(gs.currentRound + 1, gs.globalMorale, gs.globalRisk, MAX_ROUNDS);
     if (endCheck.ended) {
@@ -182,9 +195,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
         set({ inheritance: newInheritance });
       }
 
+      const historyRecords = JSON.parse(localStorage.getItem('emergency_drill_history') || '[]');
+      historyRecords.unshift({
+        score: score.score,
+        rating: score.rating,
+        date: Date.now(),
+        victory: endCheck.victory,
+      });
+      localStorage.setItem('emergency_drill_history', JSON.stringify(historyRecords.slice(0, 20)));
+      set({ historyRecords });
+
       clearSave();
       set({ gameState: updated, finalScore: score, gameOverReason: endCheck.reason || '' });
-      return;
+      return true;
     }
 
     const nextRoundNum = gs.currentRound + 1;
@@ -201,6 +224,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({ gameState: updated });
     saveGame(updated);
+    return false;
   },
 
   goToPhase: (phase: GamePhase) => {

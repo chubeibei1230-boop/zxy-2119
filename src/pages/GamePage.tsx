@@ -39,8 +39,8 @@ export default function GamePage() {
   };
 
   const handleNextRound = () => {
-    nextRound();
-    if (gameState.isGameOver) {
+    const isGameOver = nextRound();
+    if (isGameOver) {
       navigate('/result');
     }
   };

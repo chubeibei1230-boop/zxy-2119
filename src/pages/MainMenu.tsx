@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/store/gameStore';
-import { Shield, Play, Save, Trophy, Star, X, CheckCircle2, XCircle } from 'lucide-react';
+import { Shield, Play, Save, Trophy, Star, X, CheckCircle2, XCircle, FileText, Eye } from 'lucide-react';
 
 export default function MainMenu() {
   const navigate = useNavigate();
-  const { initNewGame, continueGame, hasSave, checkHasSave, inheritance, showHistory, toggleHistory, historyRecords } = useGameStore();
+  const { initNewGame, continueGame, hasSave, checkHasSave, inheritance, showHistory, toggleHistory, historyRecords, loadReportById, setCurrentReport } = useGameStore();
 
   const handleNewGame = () => {
     initNewGame(inheritance.strategyPoints > 0);
@@ -63,26 +63,42 @@ export default function MainMenu() {
               ) : (
                 <div className="space-y-2">
                   {historyRecords.map((record, i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg bg-zinc-800/40 border border-zinc-700/50">
-                      <div className="flex items-center gap-3">
-                        {record.victory ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                        <div>
-                          <div className={`text-2xl font-bold ${ratingColors[record.rating] || 'text-zinc-400'}`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                            {record.rating}
+                    <div key={i} className="px-4 py-3 rounded-lg bg-zinc-800/40 border border-zinc-700/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {record.victory ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          )}
+                          <div>
+                            <div className={`text-2xl font-bold ${ratingColors[record.rating] || 'text-zinc-400'}`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                              {record.rating}
+                            </div>
+                            <div className="text-xs text-zinc-500">{formatDate(record.date)}</div>
                           </div>
-                          <div className="text-xs text-zinc-500">{formatDate(record.date)}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-amber-400 font-bold text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                            {record.score}
+                          </div>
+                          <div className="text-xs text-zinc-500">{record.victory ? '通关' : '失败'}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-amber-400 font-bold text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                          {record.score}
-                        </div>
-                        <div className="text-xs text-zinc-500">{record.victory ? '通关' : '失败'}</div>
-                      </div>
+                      {record.reportId && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadReportById(record.reportId!);
+                            toggleHistory();
+                            navigate(`/report/${record.reportId}`);
+                          }}
+                          className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-medium transition-all hover:bg-blue-500/20"
+                        >
+                          <Eye className="w-4 h-4" />
+                          查看复盘报告
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

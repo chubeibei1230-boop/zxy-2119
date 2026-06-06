@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, GamePhase, TeamId, Allocation, Inheritance } from '@/types/game';
+import type { GameState, GamePhase, TeamId, Allocation, Inheritance, GameReport } from '@/types/game';
 import {
   TEAM_IDS,
   TEAM_CONFIG,
@@ -18,7 +18,8 @@ import {
   calculateFinalScore,
   checkGameEnd,
 } from '@/engine/scoreCalculator';
-import { saveGame, loadGame, clearSave, loadInheritance, saveInheritance, hasSaveData } from '@/utils/saveManager';
+import { generateGameReport } from '@/engine/reportGenerator';
+import { saveGame, loadGame, clearSave, loadInheritance, saveInheritance, hasSaveData, saveReport, loadReports, loadReport } from '@/utils/saveManager';
 
 interface GameStore {
   gameState: GameState | null;
@@ -27,7 +28,9 @@ interface GameStore {
   finalScore: { score: number; rating: string; strategyPoints: number } | null;
   gameOverReason: string;
   showHistory: boolean;
-  historyRecords: Array<{ score: number; rating: string; date: number; victory: boolean }>;
+  historyRecords: Array<{ score: number; rating: string; date: number; victory: boolean; reportId?: string }>;
+  currentReport: GameReport | null;
+  reports: GameReport[];
 
   initNewGame: (useInheritedPoints: boolean) => void;
   continueGame: () => boolean;
@@ -40,6 +43,9 @@ interface GameStore {
   returnToMenu: () => void;
   checkHasSave: () => void;
   toggleHistory: () => void;
+  loadAllReports: () => void;
+  setCurrentReport: (report: GameReport | null) => void;
+  loadReportById: (id: string) => void;
 }
 
 function createInitialGameState(inheritedPoints: number): GameState {
@@ -85,6 +91,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameOverReason: '',
   showHistory: false,
   historyRecords: JSON.parse(localStorage.getItem('emergency_drill_history') || '[]'),
+  currentReport: null,
+  reports: loadReports(),
 
   checkHasSave: () => {
     set({ hasSave: hasSaveData() });
@@ -92,6 +100,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   toggleHistory: () => {
     set((s) => ({ showHistory: !s.showHistory }));
+  },
+
+  loadAllReports: () => {
+    set({ reports: loadReports() });
+  },
+
+  setCurrentReport: (report: GameReport | null) => {
+    set({ currentReport: report });
+  },
+
+  loadReportById: (id: string) => {
+    const report = loadReport(id);
+    set({ currentReport: report });
   },
 
   initNewGame: (useInheritedPoints: boolean) => {
@@ -195,15 +216,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
         set({ inheritance: newInheritance });
       }
 
+      const report = generateGameReport(updated, score.score, score.rating, endCheck.victory, endCheck.reason || '');
+      saveReport(report);
+      const reports = loadReports();
+
       const historyRecords = JSON.parse(localStorage.getItem('emergency_drill_history') || '[]');
       historyRecords.unshift({
         score: score.score,
         rating: score.rating,
         date: Date.now(),
         victory: endCheck.victory,
+        reportId: report.id,
       });
       localStorage.setItem('emergency_drill_history', JSON.stringify(historyRecords.slice(0, 20)));
-      set({ historyRecords });
+      set({ historyRecords, reports, currentReport: report });
 
       clearSave();
       set({ gameState: updated, finalScore: score, gameOverReason: endCheck.reason || '' });

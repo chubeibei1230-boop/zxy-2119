@@ -67,6 +67,53 @@ export interface Inheritance {
   bestScore: number;
 }
 
+export interface RoundSnapshot {
+  roundNumber: number;
+  events: GameEvent[];
+  focusTarget: TeamId | null;
+  allocation: Allocation;
+  taskCompleted: Record<TeamId, boolean>;
+  moraleDelta: number;
+  riskDelta: number;
+  completionRate: number;
+  globalMorale: number;
+  globalRisk: number;
+  teams: Record<TeamId, {
+    morale: number;
+    risk: number;
+    efficiency: number;
+    allocatedPoints: number;
+  }>;
+}
+
+export interface ReportSummary {
+  bestRound: number;
+  bestRoundReason: string;
+  mostDangerousRound: number;
+  mostDangerousRoundReason: string;
+}
+
+export interface GameReport {
+  id: string;
+  timestamp: number;
+  score: number;
+  rating: Rating;
+  victory: boolean;
+  reason: string;
+  totalRounds: number;
+  avgCompletionRate: number;
+  finalMorale: number;
+  finalRisk: number;
+  finalTeams: Record<TeamId, {
+    morale: number;
+    risk: number;
+    efficiency: number;
+  }>;
+  rounds: RoundSnapshot[];
+  summary: ReportSummary;
+  suggestions: string[];
+}
+
 export interface SaveData {
   gameState: GameState;
   timestamp: number;

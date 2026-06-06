@@ -21,7 +21,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { TEAM_CONFIG, TEAM_IDS, TeamId } from '@/types/game';
-import type { RoundSnapshot } from '@/types/game';
+import type { RoundSnapshot, RoundState } from '@/types/game';
 
 export default function ReportPage() {
   const navigate = useNavigate();
@@ -343,12 +343,26 @@ export default function ReportPage() {
 }
 
 function RoundDetail({ round, expanded, onToggle }: {
-  round: RoundSnapshot;
+  round: RoundState;
   expanded: boolean;
   onToggle: () => void;
 }) {
   const completedCount = Object.values(round.taskCompleted).filter(Boolean).length;
   const totalTeams = Object.keys(round.taskCompleted).length;
+
+  const getStatusColor = (value: number, type: 'morale' | 'risk') => {
+    if (type === 'morale') {
+      return value > 60 ? 'bg-green-500' : value > 30 ? 'bg-amber-500' : 'bg-red-500';
+    }
+    return value < 40 ? 'bg-green-500' : value < 70 ? 'bg-amber-500' : 'bg-red-500';
+  };
+
+  const getTextColor = (value: number, type: 'morale' | 'risk') => {
+    if (type === 'morale') {
+      return value > 60 ? 'text-green-400' : value > 30 ? 'text-amber-400' : 'text-red-400';
+    }
+    return value < 40 ? 'text-green-400' : value < 70 ? 'text-amber-400' : 'text-red-400';
+  };
 
   return (
     <div className="bg-[#0f1923] rounded-lg border border-zinc-800 overflow-hidden">
@@ -436,6 +450,57 @@ function RoundDetail({ round, expanded, onToggle }: {
               ))}
             </div>
           </div>
+
+          {round.teams && (
+            <div>
+              <h4 className="text-sm font-medium text-zinc-400 mb-2">各小组状态</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {TEAM_IDS.map((teamId) => {
+                  const teamState = round.teams[teamId];
+                  return (
+                    <div
+                      key={teamId}
+                      className="bg-zinc-800/50 rounded-lg px-3 py-2 border border-zinc-700/50"
+                    >
+                      <div className="text-amber-300 font-medium text-xs mb-2">
+                        {TEAM_CONFIG[teamId].name}
+                      </div>
+                      <div className="space-y-1.5">
+                        <div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-zinc-500">士气</span>
+                            <span className={`font-medium ${getTextColor(teamState.morale, 'morale')}`}>
+                              {teamState.morale}
+                            </span>
+                          </div>
+                          <div className="w-full h-1 bg-zinc-700 rounded-full overflow-hidden mt-0.5">
+                            <div
+                              className={`h-full rounded-full ${getStatusColor(teamState.morale, 'morale')}`}
+                              style={{ width: `${teamState.morale}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-zinc-500">风险</span>
+                            <span className={`font-medium ${getTextColor(teamState.risk, 'risk')}`}>
+                              {teamState.risk}
+                            </span>
+                          </div>
+                          <div className="w-full h-1 bg-zinc-700 rounded-full overflow-hidden mt-0.5">
+                            <div
+                              className={`h-full rounded-full ${getStatusColor(teamState.risk, 'risk')}`}
+                              style={{ width: `${teamState.risk}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-zinc-800/30 rounded-lg p-3 text-center">

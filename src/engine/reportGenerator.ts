@@ -1,73 +1,7 @@
-import type { RoundState, GameState, GameReport, RoundSnapshot, ReportSummary, TeamId } from '@/types/game';
-import { TEAM_CONFIG, MAX_MORALE, MAX_RISK } from '@/types/game';
+import type { RoundState, GameState, GameReport, ReportSummary, TeamId } from '@/types/game';
+import { TEAM_CONFIG } from '@/types/game';
 
-export function generateRoundSnapshots(
-  roundHistory: RoundState[],
-  finalGameState: GameState
-): RoundSnapshot[] {
-  const snapshots: RoundSnapshot[] = [];
-  
-  let runningMorale = finalGameState.globalMorale;
-  let runningRisk = finalGameState.globalRisk;
-  let runningTeams = { ...finalGameState.teams };
-  
-  for (let i = roundHistory.length - 1; i >= 0; i--) {
-    const round = roundHistory[i];
-    
-    const teamsSnapshot: Record<TeamId, { morale: number; risk: number; efficiency: number; allocatedPoints: number }> = {} as any;
-    for (const teamId of Object.keys(runningTeams) as TeamId[]) {
-      teamsSnapshot[teamId] = {
-        morale: runningTeams[teamId].morale,
-        risk: runningTeams[teamId].risk,
-        efficiency: runningTeams[teamId].efficiency,
-        allocatedPoints: runningTeams[teamId].allocatedPoints,
-      };
-    }
-    
-    snapshots.unshift({
-      roundNumber: round.roundNumber,
-      events: round.events,
-      focusTarget: round.focusTarget,
-      allocation: round.allocation,
-      taskCompleted: round.taskCompleted,
-      moraleDelta: round.moraleDelta,
-      riskDelta: round.riskDelta,
-      completionRate: round.completionRate,
-      globalMorale: runningMorale,
-      globalRisk: runningRisk,
-      teams: teamsSnapshot,
-    });
-    
-    runningMorale = Math.max(0, Math.min(MAX_MORALE, runningMorale - round.moraleDelta));
-    runningRisk = Math.max(0, Math.min(MAX_RISK, runningRisk - round.riskDelta));
-    
-    const prevRound = roundHistory[i - 1];
-    if (prevRound) {
-      const newTeams: typeof runningTeams = {} as any;
-      for (const teamId of Object.keys(runningTeams) as TeamId[]) {
-        const team = runningTeams[teamId];
-        const wasCompleted = prevRound.taskCompleted[teamId];
-        newTeams[teamId] = {
-          ...team,
-          morale: wasCompleted
-            ? Math.max(0, Math.min(MAX_MORALE, team.morale - 10 - (teamId === prevRound.focusTarget ? 5 : 0)))
-            : Math.max(0, Math.min(MAX_MORALE, team.morale + 15)),
-          risk: wasCompleted
-            ? Math.max(0, Math.min(MAX_RISK, team.risk + 5))
-            : Math.max(0, Math.min(MAX_RISK, team.risk - 10)),
-          efficiency: wasCompleted
-            ? Math.max(0.3, team.efficiency - 0.05)
-            : Math.min(1, team.efficiency + 0.1),
-        };
-      }
-      runningTeams = newTeams;
-    }
-  }
-  
-  return snapshots;
-}
-
-export function generateReportSummary(rounds: RoundSnapshot[]): ReportSummary {
+export function generateReportSummary(rounds: RoundState[]): ReportSummary {
   if (rounds.length === 0) {
     return {
       bestRound: 1,
@@ -122,7 +56,7 @@ export function generateReportSummary(rounds: RoundSnapshot[]): ReportSummary {
 }
 
 export function generateSuggestions(
-  rounds: RoundSnapshot[],
+  rounds: RoundState[],
   finalTeams: GameState['teams'],
   victory: boolean
 ): string[] {
@@ -186,7 +120,7 @@ export function generateGameReport(
   victory: boolean,
   reason: string
 ): GameReport {
-  const rounds = generateRoundSnapshots(gameState.roundHistory, gameState);
+  const rounds = gameState.roundHistory;
   const summary = generateReportSummary(rounds);
   
   const finalTeams: GameReport['finalTeams'] = {} as any;

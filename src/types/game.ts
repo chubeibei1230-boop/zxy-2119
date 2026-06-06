@@ -41,6 +41,14 @@ export interface RoundState {
   moraleDelta: number;
   riskDelta: number;
   completionRate: number;
+  globalMorale?: number;
+  globalRisk?: number;
+  teams?: Record<TeamId, {
+    morale: number;
+    risk: number;
+    efficiency: number;
+    allocatedPoints: number;
+  }>;
 }
 
 export interface GameState {
@@ -109,7 +117,7 @@ export interface GameReport {
     risk: number;
     efficiency: number;
   }>;
-  rounds: RoundSnapshot[];
+  rounds: RoundState[];
   summary: ReportSummary;
   suggestions: string[];
 }

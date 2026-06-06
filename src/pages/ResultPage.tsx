@@ -6,7 +6,7 @@ import { TEAM_CONFIG, TEAM_IDS } from '@/types/game';
 
 export default function ResultPage() {
   const navigate = useNavigate();
-  const { gameState, finalScore, gameOverReason, returnToMenu, inheritance, currentReport } = useGameStore();
+  const { gameState, finalScore, gameOverReason, returnToMenu, inheritance, currentReport, initNewGame } = useGameStore();
 
   if (!gameState || !finalScore) {
     navigate('/');
@@ -238,7 +238,11 @@ export default function ResultPage() {
             </button>
           )}
           <button
-            onClick={() => { returnToMenu(); navigate('/game'); }}
+            onClick={() => {
+              returnToMenu();
+              initNewGame(inheritance.strategyPoints > 0);
+              navigate('/game');
+            }}
             className="flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-amber-500/20 border border-amber-500/60 text-amber-400 font-semibold transition-all duration-300 hover:bg-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
           >
             <RotateCcw className="w-5 h-5" />

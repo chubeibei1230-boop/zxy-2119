@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, GamePhase, TeamId, Allocation, Inheritance, GameReport } from '@/types/game';
+import type { GameState, GamePhase, TeamId, Allocation, Inheritance, GameReport, RoundState } from '@/types/game';
 import {
   TEAM_IDS,
   TEAM_CONFIG,
@@ -99,7 +99,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   toggleHistory: () => {
-    set((s) => ({ showHistory: !s.showHistory }));
+    const historyRecords = JSON.parse(localStorage.getItem('emergency_drill_history') || '[]');
+    const reports = loadReports();
+    set((s) => ({ showHistory: !s.showHistory, historyRecords, reports }));
   },
 
   loadAllReports: () => {
@@ -163,13 +165,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const globalMorale = calculateGlobalMorale(updatedTeams);
     const globalRisk = calculateGlobalRisk(updatedTeams);
 
+    const teamsSnapshot: RoundState['teams'] = {} as any;
+    for (const teamId of TEAM_IDS) {
+      const team = updatedTeams[teamId];
+      teamsSnapshot[teamId] = {
+        morale: team.morale,
+        risk: team.risk,
+        efficiency: team.efficiency,
+        allocatedPoints: team.allocatedPoints,
+      };
+    }
+
+    const completeRoundResult: RoundState = {
+      ...roundResult,
+      globalMorale,
+      globalRisk,
+      teams: teamsSnapshot,
+    };
+
     const updated: GameState = {
       ...gs,
       phase: 'review',
       teams: updatedTeams,
       globalMorale,
       globalRisk,
-      roundHistory: [...gs.roundHistory, roundResult],
+      roundHistory: [...gs.roundHistory, completeRoundResult],
     };
 
     set({ gameState: updated });
